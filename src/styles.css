@@ -53,6 +53,24 @@ input, select, textarea {
   font-size: 14px;
 }
 
+.percent-field {
+  position: relative;
+}
+
+.percent-field input {
+  padding-right: 28px;
+}
+
+.percent-field .suffix {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
 textarea {
   min-height: 70px;
   resize: vertical;
