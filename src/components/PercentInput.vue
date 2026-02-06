@@ -86,12 +86,13 @@ watch(
   () => {
     // Update cached separators and reformat display value when locale or formatting options change
     localeSeparators.value = getLocaleNumberSeparators(props.localeCode);
+    // Reformat display value when locale or formatting options change
     displayValue.value = formatValue(props.modelValue);
   }
 );
-
+  
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
+  
 const parseValue = (raw) => {
   if (!raw) return 0;
   const { group, decimal } = localeSeparators.value;
