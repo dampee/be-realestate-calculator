@@ -1,15 +1,15 @@
 <template>
   <div class="section">
     <div class="inline" style="justify-content: space-between; width: 100%;">
-      <h2>Units</h2>
-      <button class="secondary" @click="addUnit">Add unit</button>
+      <h2>{{ copy.sections.units }}</h2>
+      <button class="secondary" @click="addUnit">{{ copy.actions.addUnit }}</button>
     </div>
     <table class="table" style="margin-top: 12px;">
       <thead>
         <tr>
-          <th>Type</th>
-          <th>Label</th>
-          <th>Monthly Rent</th>
+          <th>{{ copy.labels.type }}</th>
+          <th>{{ copy.labels.label }}</th>
+          <th>{{ copy.labels.monthlyRent }}</th>
           <th></th>
         </tr>
       </thead>
@@ -17,12 +17,12 @@
         <tr v-for="unit in units" :key="unit.id">
           <td>
             <select :value="unit.type" @change="updateUnit(unit.id, { type: $event.target.value })">
-              <option value="apartment">Apartment</option>
-              <option value="commercial">Commercial</option>
+              <option value="apartment">{{ copy.unitTypes.apartment }}</option>
+              <option value="commercial">{{ copy.unitTypes.commercial }}</option>
             </select>
           </td>
           <td>
-            <input :value="unit.label" @input="updateUnit(unit.id, { label: $event.target.value })" placeholder="Unit label" />
+            <input :value="unit.label" @input="updateUnit(unit.id, { label: $event.target.value })" :placeholder="copy.placeholders.unitLabel" />
           </td>
           <td>
             <input
@@ -34,7 +34,7 @@
             />
           </td>
           <td>
-            <button class="secondary" @click="removeUnit(unit.id)">Remove</button>
+            <button class="secondary" @click="removeUnit(unit.id)">{{ copy.actions.remove }}</button>
           </td>
         </tr>
       </tbody>
@@ -46,6 +46,10 @@
 const props = defineProps({
   units: {
     type: Array,
+    required: true
+  },
+  copy: {
+    type: Object,
     required: true
   }
 });
