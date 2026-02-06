@@ -2,6 +2,10 @@
 
 Single-page Vue 3 + Vite app for Belgian mixed-use real estate investment calculations.
 
+## Live site
+
+Visit the GitHub Pages deployment here: https://dampee.github.io/be-realestate-calculator/
+
 ## GitHub Pages deployment
 
 The site is automatically deployed to GitHub Pages via GitHub Actions when changes are pushed to the `main` or `master` branch.
