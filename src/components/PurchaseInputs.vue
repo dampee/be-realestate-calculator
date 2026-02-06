@@ -25,6 +25,7 @@
           :model-value="state.loanToValuePct"
           :locale-code="localeCode"
           :max-fraction-digits="2"
+          :min="0"
           @update:modelValue="updateNumber('loanToValuePct', $event)"
         />
         <p class="helper">{{ copy.helpers.loanToValueHint }}</p>
@@ -41,6 +42,7 @@
           :model-value="state.targetNetYield"
           :locale-code="localeCode"
           :max-fraction-digits="3"
+          :min="0"
           @update:modelValue="updateNumber('targetNetYield', $event)"
         />
       </div>
@@ -54,6 +56,7 @@
           :model-value="state.assumptions.mortgageBasisFactor"
           :locale-code="localeCode"
           :max-fraction-digits="2"
+          :min="0"
           @update:modelValue="updateAssumption('mortgageBasisFactor', $event)"
         />
       </div>
@@ -63,6 +66,7 @@
           :model-value="state.assumptions.notaryPurchaseFactor"
           :locale-code="localeCode"
           :max-fraction-digits="3"
+          :min="0"
           @update:modelValue="updateAssumption('notaryPurchaseFactor', $event)"
         />
       </div>
@@ -76,6 +80,7 @@
           :model-value="state.assumptions.mortgageRegistrationRate"
           :locale-code="localeCode"
           :max-fraction-digits="3"
+          :min="0"
           @update:modelValue="updateAssumption('mortgageRegistrationRate', $event)"
         />
       </div>
@@ -85,6 +90,7 @@
           :model-value="state.assumptions.notaryLoanFactor"
           :locale-code="localeCode"
           :max-fraction-digits="3"
+          :min="0"
           @update:modelValue="updateAssumption('notaryLoanFactor', $event)"
         />
       </div>
@@ -94,6 +100,7 @@
           :model-value="state.assumptions.loanCostBufferPct"
           :locale-code="localeCode"
           :max-fraction-digits="3"
+          :min="0"
           @update:modelValue="updateAssumption('loanCostBufferPct', $event)"
         />
       </div>
@@ -103,6 +110,7 @@
           :model-value="state.vacancyRateApartment"
           :locale-code="localeCode"
           :max-fraction-digits="2"
+          :min="0"
           @update:modelValue="updateNumber('vacancyRateApartment', $event)"
         />
       </div>
@@ -112,6 +120,7 @@
           :model-value="state.vacancyRateCommercial"
           :locale-code="localeCode"
           :max-fraction-digits="2"
+          :min="0"
           @update:modelValue="updateNumber('vacancyRateCommercial', $event)"
         />
       </div>
