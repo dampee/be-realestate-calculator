@@ -4,6 +4,21 @@ Single-page Vue 3 + Vite app for Belgian mixed-use real estate investment calcul
 
 ## GitHub Pages deployment
 
+The site is automatically deployed to GitHub Pages via GitHub Actions when changes are pushed to the `main` or `master` branch.
+
+### Automatic deployment (recommended)
+
+Push your changes to the `main` or `master` branch, and the `.github/workflows/deploy.yml` workflow will:
+1. Install dependencies with `npm ci`
+2. Build the site with `npm run build`
+3. Deploy the `dist` folder to GitHub Pages
+
+You can also trigger a manual deployment from the Actions tab in GitHub.
+
+### Manual deployment (alternative)
+
+If you prefer to deploy manually:
+
 1. Install dependencies:
    ```bash
    npm install
