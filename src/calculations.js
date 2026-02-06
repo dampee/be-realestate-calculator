@@ -20,7 +20,8 @@ export const getTotalInvestmentExclLoanCosts = (state) => {
 export const calcLoanAmounts = (state) => {
   const totalInvestmentExclLoanCosts = getTotalInvestmentExclLoanCosts(state);
   const maxLoanAmount = state.purchasePrice * (state.loanToValuePct ?? 0);
-  const requestedLoanAmount = Math.max(0, totalInvestmentExclLoanCosts - state.ownInvestment);
+  const ownInvestment = Number.isFinite(state.ownInvestment) ? state.ownInvestment : 0;
+  const requestedLoanAmount = Math.max(0, totalInvestmentExclLoanCosts - ownInvestment);
   const effectiveLoanAmount = requestedLoanAmount <= 0 ? 0 : Math.min(requestedLoanAmount, maxLoanAmount);
   return {
     totalInvestmentExclLoanCosts,
