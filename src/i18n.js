@@ -76,7 +76,7 @@ export const translations = {
       purchasePrice: 'Aankoopprijs (€)',
       renovationBudget: 'Renovatiebudget (eenmalig)',
       loanToValue: 'Leningspercentage (max.)',
-      loanAmount: 'Leenbedrag (optioneel)',
+      ownInvestment: 'Eigen investering',
       vacancyApartment: 'Leegstand (appartement)',
       vacancyCommercial: 'Leegstand (handelsruimte)',
       targetNetYield: 'Doel netto rendement',
@@ -104,7 +104,8 @@ export const translations = {
       regionRate: 'Registratierechten zijn indicatief; controleer het exacte tarief.',
       loanToValueHint: 'Banken lenen vaak max. 90% (80% voor opbrengsteigendommen).',
       loanToValueMax: 'Max. leenbedrag: {amount}',
-      loanToValueExceeded: 'Het leenbedrag ligt boven het maximum en wordt begrensd in de berekeningen.'
+      loanAmountCalculated: 'Berekend leenbedrag: {amount}',
+      loanToValueExceeded: 'Het berekende leenbedrag ligt boven het maximum en wordt begrensd in de berekeningen.'
     },
     loanDecisionGuide: {
       title: 'Het probleem dat de bank oplost',
@@ -332,7 +333,7 @@ export const translations = {
       purchasePrice: "Prix d'achat (€)",
       renovationBudget: 'Budget rénovation (ponctuel)',
       loanToValue: "Pourcentage d'emprunt (max.)",
-      loanAmount: "Montant emprunté (optionnel)",
+      ownInvestment: 'Apport personnel',
       vacancyApartment: 'Vacance (appartement)',
       vacancyCommercial: 'Vacance (commerce)',
       targetNetYield: 'Rendement net cible',
@@ -360,7 +361,8 @@ export const translations = {
       regionRate: "Le taux d'enregistrement est indicatif ; vérifiez le taux exact.",
       loanToValueHint: 'Les banques prêtent souvent max. 90 % (80 % pour les biens de rendement).',
       loanToValueMax: 'Montant max. emprunté : {amount}',
-      loanToValueExceeded: "Le montant emprunté dépasse le maximum et est plafonné dans les calculs."
+      loanAmountCalculated: "Montant emprunté calculé : {amount}",
+      loanToValueExceeded: "Le montant emprunté calculé dépasse le maximum et est plafonné dans les calculs."
     },
     loanDecisionGuide: {
       title: 'Le problème que la banque résout',

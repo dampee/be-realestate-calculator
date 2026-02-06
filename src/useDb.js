@@ -122,7 +122,7 @@ const defaultState = (locale = getInitialLocale()) => ({
   region: 'Vlaanderen',
   purchasePrice: 0,
   renovationOneOff: 0,
-  loanAmount: 0,
+  ownInvestment: 0,
   loanToValuePct: 0.9,
   vacancyRateApartment: 0.05,
   vacancyRateCommercial: 0.15,

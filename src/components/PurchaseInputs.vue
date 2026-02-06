@@ -26,8 +26,9 @@
         <p class="helper">{{ formattedLoanMax }}</p>
       </div>
       <div>
-        <label>{{ copy.labels.loanAmount }}</label>
-        <input type="number" min="0" step="1000" :value="state.loanAmount" @input="updateNumber('loanAmount', $event.target.value)" />
+        <label>{{ copy.labels.ownInvestment }}</label>
+        <input type="number" min="0" step="1000" :value="state.ownInvestment" @input="updateNumber('ownInvestment', $event.target.value)" />
+        <p class="helper">{{ formattedLoanAmount }}</p>
         <p v-if="isLoanTooHigh" class="helper">{{ copy.helpers.loanToValueExceeded }}</p>
       </div>
       <div>
@@ -88,6 +89,10 @@ const props = defineProps({
   localeCode: {
     type: String,
     required: true
+  },
+  loanAmount: {
+    type: Number,
+    required: true
   }
 });
 
@@ -96,7 +101,8 @@ const emit = defineEmits(['update:state']);
 const formatCurrency = (value) => new Intl.NumberFormat(props.localeCode, { style: 'currency', currency: 'EUR' }).format(value ?? 0);
 const maxLoanAmount = computed(() => props.state.purchasePrice * props.state.loanToValuePct);
 const formattedLoanMax = computed(() => props.copy.helpers.loanToValueMax.replace('{amount}', formatCurrency(maxLoanAmount.value)));
-const isLoanTooHigh = computed(() => props.state.loanAmount > maxLoanAmount.value && maxLoanAmount.value > 0);
+const formattedLoanAmount = computed(() => props.copy.helpers.loanAmountCalculated.replace('{amount}', formatCurrency(props.loanAmount)));
+const isLoanTooHigh = computed(() => props.loanAmount > maxLoanAmount.value && maxLoanAmount.value > 0);
 
 const updateField = (key, value) => {
   emit('update:state', { ...props.state, [key]: value });
