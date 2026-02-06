@@ -62,6 +62,18 @@ import CostsTable from './components/CostsTable.vue';
 import ResultsPanel from './components/ResultsPanel.vue';
 import { useDb, defaultState, defaultCostsCatalog, DRAFT_KEY } from './useDb';
 import { getCopy, getInitialLocale, getLocaleCode, setLocaleCookie } from './i18n';
+import {
+  calcCapexReserves,
+  calcLoanAmounts,
+  calcLoanCosts,
+  calcMaxBid,
+  calcNetYield,
+  calcNoi,
+  calcOpEx,
+  calcTotalNetRent,
+  getPurchaseCosts,
+  getTotalInvestmentExclLoanCosts
+} from './calculations';
 
 const { db, activeId, loadDb, createNewCalculation, saveCurrent, duplicateCurrent, deleteCurrent, setActiveCalculation, resetAll } = useDb();
 
@@ -100,23 +112,12 @@ const mergeWithDefaults = (partial, defaults) => {
   return partial ?? defaults;
 };
 
-const getRegRate = (region) => (region === 'Vlaanderen' ? 0.12 : 0.125);
-
-const getPurchaseCosts = (state) => {
-  const registration = state.purchasePrice * getRegRate(state.region);
-  const notaryPurchase = state.purchasePrice * state.assumptions.notaryPurchaseFactor;
-  const fixedAct = state.assumptions.purchaseFixedActCost;
-  return {
-    registration,
-    notaryPurchase,
-    fixedAct,
-    total: registration + notaryPurchase + fixedAct
+const getSafeLoanTotals = (state) => {
+  const normalized = {
+    ...state,
+    ownInvestment: Number.isFinite(state.ownInvestment) ? state.ownInvestment : 0
   };
-};
-
-const getTotalInvestmentExclLoanCosts = (state) => {
-  const purchase = getPurchaseCosts(state);
-  return state.purchasePrice + purchase.total + state.renovationOneOff;
+  return calcLoanAmounts(normalized);
 };
 
 const normalizeState = (state) => {
@@ -124,8 +125,8 @@ const normalizeState = (state) => {
   if (!Number.isFinite(state?.ownInvestment)) {
     const priorLoan = Number(state?.loanAmount);
     if (Number.isFinite(priorLoan) && priorLoan > 0) {
-      const totalInvestment = getTotalInvestmentExclLoanCosts(merged);
-      merged.ownInvestment = Math.max(0, totalInvestment - priorLoan);
+      const totals = getSafeLoanTotals(merged);
+      merged.ownInvestment = Math.max(0, totals.totalInvestmentExclLoanCosts - priorLoan);
     } else {
       merged.ownInvestment = 0;
     }
@@ -209,7 +210,14 @@ const handleSave = () => {
     saveError.value = copy.value.errors.addressUnique;
     return;
   }
-  if (!currentDoc.value) return;
+  if (!currentDoc.value) {
+    const doc = createNewCalculation();
+    doc.address = trimmed;
+    doc.notes = notes.value;
+    saveCurrent(doc, currentState.value);
+    loadFromDoc(doc);
+    return;
+  }
   currentDoc.value.address = trimmed;
   currentDoc.value.notes = notes.value;
   saveCurrent(currentDoc.value, currentState.value);
@@ -280,82 +288,40 @@ const promptDraftRestore = () => {
 
 const formatCurrency = (value) => new Intl.NumberFormat(localeCode.value, { style: 'currency', currency: 'EUR' }).format(value ?? 0);
 
-const regRate = computed(() => getRegRate(currentState.value.region));
-
 const purchaseCosts = computed(() => {
   return getPurchaseCosts(currentState.value);
 });
 
-const totalInvestmentExclLoanCosts = computed(() => {
-  return getTotalInvestmentExclLoanCosts(currentState.value);
-});
+const totalInvestmentExclLoanCosts = computed(() => getTotalInvestmentExclLoanCosts(currentState.value));
 
-const maxLoanAmount = computed(() => currentState.value.purchasePrice * (currentState.value.loanToValuePct ?? 0));
+const loanTotals = computed(() => getSafeLoanTotals(currentState.value));
 
-const requestedLoanAmount = computed(() => {
-  return Math.max(0, totalInvestmentExclLoanCosts.value - currentState.value.ownInvestment);
-});
+const maxLoanAmount = computed(() => loanTotals.value.maxLoanAmount);
 
-const effectiveLoanAmount = computed(() => {
-  if (requestedLoanAmount.value <= 0) return 0;
-  return Math.min(requestedLoanAmount.value, maxLoanAmount.value);
-});
+const requestedLoanAmount = computed(() => loanTotals.value.requestedLoanAmount);
 
-const loanCosts = computed(() => {
-  if (effectiveLoanAmount.value <= 0) return null;
-  const mortgageBasis = effectiveLoanAmount.value * currentState.value.assumptions.mortgageBasisFactor;
-  const mortgageRegistration = mortgageBasis * currentState.value.assumptions.mortgageRegistrationRate;
-  const notaryLoan = effectiveLoanAmount.value * currentState.value.assumptions.notaryLoanFactor;
-  return {
-    mortgageBasis,
-    mortgageRegistration,
-    notaryLoan,
-    totalLoanCosts: mortgageRegistration + notaryLoan
-  };
-});
+const effectiveLoanAmount = computed(() => loanTotals.value.effectiveLoanAmount);
 
-const totalNetRent = computed(() => {
-  return currentState.value.units.reduce((sum, unit) => {
-    const annualGross = unit.monthlyRent * 12;
-    const vacancyRate = unit.type === 'apartment' ? currentState.value.vacancyRateApartment : currentState.value.vacancyRateCommercial;
-    const annualNet = annualGross * (1 - vacancyRate);
-    return sum + annualNet;
-  }, 0);
-});
+const loanCosts = computed(() => calcLoanCosts(currentState.value, effectiveLoanAmount.value));
 
-const opEx = computed(() => {
-  return currentState.value.costsCatalog
-    .filter((item) => item.enabled && item.category !== 'capex_reserve')
-    .reduce((sum, item) => sum + item.amountAnnual, 0);
-});
+const totalNetRent = computed(() => calcTotalNetRent(currentState.value));
 
-const capexReserves = computed(() => {
-  return currentState.value.costsCatalog
-    .filter((item) => item.enabled && item.category === 'capex_reserve')
-    .reduce((sum, item) => sum + item.amountAnnual, 0);
-});
+const opEx = computed(() => calcOpEx(currentState.value));
 
-const noi = computed(() => totalNetRent.value - opEx.value - capexReserves.value);
+const capexReserves = computed(() => calcCapexReserves(currentState.value));
 
-const netYield = computed(() => {
-  if (totalInvestmentExclLoanCosts.value <= 0) return NaN;
-  return noi.value / totalInvestmentExclLoanCosts.value;
-});
+const noi = computed(() => calcNoi(currentState.value));
+
+const netYield = computed(() => calcNetYield(noi.value, totalInvestmentExclLoanCosts.value));
 
 const maxBid = computed(() => {
-  const target = currentState.value.targetNetYield;
-  if (noi.value <= 0 || target <= 0) {
+  const raw = calcMaxBid(currentState.value, noi.value);
+  if (!raw) {
     return { display: copy.value.results.notAvailable, bufferedDisplay: copy.value.results.notAvailable };
   }
-  const fixedAct = currentState.value.assumptions.purchaseFixedActCost;
-  const reno = currentState.value.renovationOneOff;
-  const numerator = noi.value / target - fixedAct - reno;
-  const denominator = 1 + regRate.value + currentState.value.assumptions.notaryPurchaseFactor;
-  const maxPurchasePrice = numerator / denominator;
-  const maxWithBuffer = maxPurchasePrice / (1 + currentState.value.assumptions.loanCostBufferPct);
   return {
-    display: formatCurrency(Math.max(0, maxPurchasePrice)),
-    bufferedDisplay: formatCurrency(Math.max(0, maxWithBuffer))
+    display: formatCurrency(Math.max(0, raw.maxPurchasePrice)),
+    bufferedDisplay: formatCurrency(Math.max(0, raw.maxWithBuffer))
   };
 });
 
@@ -470,6 +436,9 @@ watch(
 watch([address, notes], () => {
   if (draftTimer) clearTimeout(draftTimer);
   draftTimer = setTimeout(saveDraft, 300);
+  if (saveError.value && address.value.trim()) {
+    saveError.value = '';
+  }
 });
 
 watch(locale, (next) => {
