@@ -4,8 +4,6 @@
       type="text"
       inputmode="decimal"
       :value="displayValue"
-      :min="min"
-      :max="max"
       @input="handleInput"
       @focus="handleFocus"
       @blur="handleBlur"
@@ -44,6 +42,22 @@ const emit = defineEmits(['update:modelValue']);
 
 const isFocused = ref(false);
 
+const getLocaleNumberSeparators = (locale) => {
+  const example = 12345.6;
+  const parts = new Intl.NumberFormat(locale).formatToParts(example);
+  let group = '';
+  let decimal = '.';
+  for (const part of parts) {
+    if (part.type === 'group' && !group) {
+      group = part.value;
+    }
+    if (part.type === 'decimal') {
+      decimal = part.value;
+    }
+  }
+  return { group, decimal };
+};
+
 const formatValue = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return '';
   const percentValue = value * 100;
@@ -54,6 +68,9 @@ const formatValue = (value) => {
 };
 
 const displayValue = ref(formatValue(props.modelValue));
+
+// Cache locale separators
+const localeSeparators = ref(getLocaleNumberSeparators(props.localeCode));
 
 watch(
   () => props.modelValue,
@@ -67,32 +84,17 @@ watch(
 watch(
   () => [props.localeCode, props.maxFractionDigits],
   () => {
-    // Reformat display value when locale or formatting options change
+    // Update cached separators and reformat display value when locale or formatting options change
+    localeSeparators.value = getLocaleNumberSeparators(props.localeCode);
     displayValue.value = formatValue(props.modelValue);
   }
 );
-
-const getLocaleNumberSeparators = (locale) => {
-  const example = 12345.6;
-  const parts = new Intl.NumberFormat(locale).formatToParts(example);
-  let group = '';
-  let decimal = '.';
-  for (const part of parts) {
-    if (part.type === 'group' && !group) {
-      group = part.value;
-    }
-    if (part.type === 'decimal' && decimal === '.') {
-      decimal = part.value;
-    }
-  }
-  return { group, decimal };
-};
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const parseValue = (raw) => {
   if (!raw) return 0;
-  const { group, decimal } = getLocaleNumberSeparators(props.localeCode);
+  const { group, decimal } = localeSeparators.value;
   let normalized = raw.replace(/\s/g, '').replace('%', '');
 
   if (group) {
