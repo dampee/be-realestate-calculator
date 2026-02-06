@@ -64,6 +64,19 @@ describe('calculations', () => {
     expect(totals.effectiveLoanAmount).toBe(Math.min(requested, maxLoan));
   });
 
+  it('handles non-finite ownInvestment gracefully', () => {
+    const state = baseState();
+    state.ownInvestment = undefined;
+    const totals = calcLoanAmounts(state);
+    expect(totals.requestedLoanAmount).toBe(totals.totalInvestmentExclLoanCosts);
+    expect(Number.isFinite(totals.requestedLoanAmount)).toBe(true);
+
+    state.ownInvestment = NaN;
+    const totals2 = calcLoanAmounts(state);
+    expect(totals2.requestedLoanAmount).toBe(totals2.totalInvestmentExclLoanCosts);
+    expect(Number.isFinite(totals2.requestedLoanAmount)).toBe(true);
+  });
+
   it('computes NOI and net yield', () => {
     const state = baseState();
     const totalNetRent = calcTotalNetRent(state);
