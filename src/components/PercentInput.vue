@@ -54,6 +54,13 @@ watch(
   }
 );
 
+watch(
+  () => [props.localeCode, props.maxFractionDigits],
+  () => {
+    // Reformat display value when locale or formatting options change
+    displayValue.value = formatValue(props.modelValue);
+  }
+);
 const parseValue = (raw) => {
   if (!raw) return 0;
   const normalized = raw.replace(/\s/g, '').replace('%', '').replace(',', '.');
