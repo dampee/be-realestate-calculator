@@ -21,7 +21,12 @@
       </div>
       <div>
         <label>{{ copy.labels.loanToValue }}</label>
-        <input type="number" min="0" step="0.01" :value="state.loanToValuePct" @input="updateNumber('loanToValuePct', $event.target.value)" />
+        <PercentInput
+          :model-value="state.loanToValuePct"
+          :locale-code="localeCode"
+          :max-fraction-digits="2"
+          @update:modelValue="updateNumber('loanToValuePct', $event)"
+        />
         <p class="helper">{{ copy.helpers.loanToValueHint }}</p>
         <p class="helper">{{ formattedLoanMax }}</p>
       </div>
@@ -31,16 +36,13 @@
         <p v-if="isLoanTooHigh" class="helper">{{ copy.helpers.loanToValueExceeded }}</p>
       </div>
       <div>
-        <label>{{ copy.labels.vacancyApartment }}</label>
-        <input type="number" min="0" step="0.01" :value="state.vacancyRateApartment" @input="updateNumber('vacancyRateApartment', $event.target.value)" />
-      </div>
-      <div>
-        <label>{{ copy.labels.vacancyCommercial }}</label>
-        <input type="number" min="0" step="0.01" :value="state.vacancyRateCommercial" @input="updateNumber('vacancyRateCommercial', $event.target.value)" />
-      </div>
-      <div>
         <label>{{ copy.labels.targetNetYield }}</label>
-        <input type="number" min="0" step="0.005" :value="state.targetNetYield" @input="updateNumber('targetNetYield', $event.target.value)" />
+        <PercentInput
+          :model-value="state.targetNetYield"
+          :locale-code="localeCode"
+          :max-fraction-digits="3"
+          @update:modelValue="updateNumber('targetNetYield', $event)"
+        />
       </div>
     </div>
 
@@ -48,11 +50,21 @@
     <div class="grid grid-2">
       <div>
         <label>{{ copy.labels.mortgageBasisFactor }}</label>
-        <input type="number" min="0" step="0.01" :value="state.assumptions.mortgageBasisFactor" @input="updateAssumption('mortgageBasisFactor', $event.target.value)" />
+        <PercentInput
+          :model-value="state.assumptions.mortgageBasisFactor"
+          :locale-code="localeCode"
+          :max-fraction-digits="2"
+          @update:modelValue="updateAssumption('mortgageBasisFactor', $event)"
+        />
       </div>
       <div>
         <label>{{ copy.labels.notaryPurchaseFactor }}</label>
-        <input type="number" min="0" step="0.001" :value="state.assumptions.notaryPurchaseFactor" @input="updateAssumption('notaryPurchaseFactor', $event.target.value)" />
+        <PercentInput
+          :model-value="state.assumptions.notaryPurchaseFactor"
+          :locale-code="localeCode"
+          :max-fraction-digits="3"
+          @update:modelValue="updateAssumption('notaryPurchaseFactor', $event)"
+        />
       </div>
       <div>
         <label>{{ copy.labels.purchaseFixedActCost }}</label>
@@ -60,15 +72,48 @@
       </div>
       <div>
         <label>{{ copy.labels.mortgageRegistrationRate }}</label>
-        <input type="number" min="0" step="0.001" :value="state.assumptions.mortgageRegistrationRate" @input="updateAssumption('mortgageRegistrationRate', $event.target.value)" />
+        <PercentInput
+          :model-value="state.assumptions.mortgageRegistrationRate"
+          :locale-code="localeCode"
+          :max-fraction-digits="3"
+          @update:modelValue="updateAssumption('mortgageRegistrationRate', $event)"
+        />
       </div>
       <div>
         <label>{{ copy.labels.notaryLoanFactor }}</label>
-        <input type="number" min="0" step="0.001" :value="state.assumptions.notaryLoanFactor" @input="updateAssumption('notaryLoanFactor', $event.target.value)" />
+        <PercentInput
+          :model-value="state.assumptions.notaryLoanFactor"
+          :locale-code="localeCode"
+          :max-fraction-digits="3"
+          @update:modelValue="updateAssumption('notaryLoanFactor', $event)"
+        />
       </div>
       <div>
         <label>{{ copy.labels.loanCostBufferPct }}</label>
-        <input type="number" min="0" step="0.001" :value="state.assumptions.loanCostBufferPct" @input="updateAssumption('loanCostBufferPct', $event.target.value)" />
+        <PercentInput
+          :model-value="state.assumptions.loanCostBufferPct"
+          :locale-code="localeCode"
+          :max-fraction-digits="3"
+          @update:modelValue="updateAssumption('loanCostBufferPct', $event)"
+        />
+      </div>
+      <div>
+        <label>{{ copy.labels.vacancyApartment }}</label>
+        <PercentInput
+          :model-value="state.vacancyRateApartment"
+          :locale-code="localeCode"
+          :max-fraction-digits="2"
+          @update:modelValue="updateNumber('vacancyRateApartment', $event)"
+        />
+      </div>
+      <div>
+        <label>{{ copy.labels.vacancyCommercial }}</label>
+        <PercentInput
+          :model-value="state.vacancyRateCommercial"
+          :locale-code="localeCode"
+          :max-fraction-digits="2"
+          @update:modelValue="updateNumber('vacancyRateCommercial', $event)"
+        />
       </div>
     </div>
   </div>
@@ -76,6 +121,7 @@
 
 <script setup>
 import { computed } from 'vue';
+import PercentInput from './PercentInput.vue';
 const props = defineProps({
   state: {
     type: Object,
