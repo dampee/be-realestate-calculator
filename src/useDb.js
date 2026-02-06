@@ -1,4 +1,5 @@
 import { reactive, ref } from 'vue';
+import { defaultCostContent, getCopy, getInitialLocale, getLocaleCode } from './i18n';
 
 const DB_KEY = 'recalc_db_v1';
 const DRAFT_KEY = 'recalc_draft_v1';
@@ -12,122 +13,117 @@ const defaultAssumptions = () => ({
   loanCostBufferPct: 0.01
 });
 
-const defaultCostsCatalog = () => [
+const resolveCostText = (id, locale) => {
+  const entry = defaultCostContent[id];
+  if (!entry) return { name: id, description: '' };
+  return entry[locale] ?? entry.nl;
+};
+
+const defaultCostsCatalog = (locale = getInitialLocale()) => [
   {
     id: 'insurance-building',
-    name: 'Building insurance (brandverzekering)',
+    ...resolveCostText('insurance-building', locale),
     category: 'insurance',
     amountAnnual: 600,
     enabled: true,
-    defaultEnabled: true,
-    description: 'Fire and structural insurance.'
+    defaultEnabled: true
   },
   {
     id: 'insurance-liability',
-    name: 'Liability insurance (BA)',
+    ...resolveCostText('insurance-liability', locale),
     category: 'insurance',
     amountAnnual: 150,
     enabled: false,
-    defaultEnabled: false,
-    description: 'Civil liability coverage.'
+    defaultEnabled: false
   },
   {
     id: 'maintenance-general',
-    name: 'General maintenance',
+    ...resolveCostText('maintenance-general', locale),
     category: 'maintenance',
     amountAnnual: 1200,
     enabled: true,
-    defaultEnabled: true,
-    description: 'Minor repairs and upkeep.'
+    defaultEnabled: true
   },
   {
     id: 'capex-reserve',
-    name: 'CAPEX reserve (major repairs reserve)',
+    ...resolveCostText('capex-reserve', locale),
     category: 'capex_reserve',
     amountAnnual: 1500,
     enabled: true,
-    defaultEnabled: true,
-    description: 'Annual reserve for large repairs.'
+    defaultEnabled: true
   },
   {
     id: 'inspection-fire-safety',
-    name: 'Fire safety / extinguishers checks',
+    ...resolveCostText('inspection-fire-safety', locale),
     category: 'inspection',
     amountAnnual: 250,
     enabled: true,
-    defaultEnabled: true,
-    description: 'Periodic fire equipment checks.'
+    defaultEnabled: true
   },
   {
     id: 'inspection-electrical',
-    name: 'Electrical inspection annualized',
+    ...resolveCostText('inspection-electrical', locale),
     category: 'inspection',
     amountAnnual: 120,
     enabled: true,
-    defaultEnabled: true,
-    description: 'Average yearly electrical checks.'
+    defaultEnabled: true
   },
   {
     id: 'inspection-gas',
-    name: 'Gas inspection annualized',
+    ...resolveCostText('inspection-gas', locale),
     category: 'inspection',
     amountAnnual: 80,
     enabled: false,
-    defaultEnabled: false,
-    description: 'Average yearly gas inspections.'
+    defaultEnabled: false
   },
   {
     id: 'inspection-elevator',
-    name: 'Elevator inspection',
+    ...resolveCostText('inspection-elevator', locale),
     category: 'inspection',
     amountAnnual: 300,
     enabled: false,
-    defaultEnabled: false,
-    description: 'Elevator certification.'
+    defaultEnabled: false
   },
   {
     id: 'tax-property',
-    name: 'Property tax (onroerende voorheffing)',
+    ...resolveCostText('tax-property', locale),
     category: 'tax',
     amountAnnual: 1800,
     enabled: true,
-    defaultEnabled: true,
-    description: 'Annual property tax.'
+    defaultEnabled: true
   },
   {
     id: 'tax-municipality',
-    name: 'Municipality taxes',
+    ...resolveCostText('tax-municipality', locale),
     category: 'tax',
     amountAnnual: 300,
     enabled: true,
-    defaultEnabled: true,
-    description: 'Local municipal taxes.'
+    defaultEnabled: true
   },
   {
     id: 'management',
-    name: 'Management / syndic / accounting',
+    ...resolveCostText('management', locale),
     category: 'management',
     amountAnnual: 600,
     enabled: false,
-    defaultEnabled: false,
-    description: 'Administrative or management support.'
+    defaultEnabled: false
   },
   {
     id: 'reletting',
-    name: 'Re-letting / advertising',
+    ...resolveCostText('reletting', locale),
     category: 'other',
     amountAnnual: 250,
     enabled: false,
-    defaultEnabled: false,
-    description: 'Tenant change and advertising costs.'
+    defaultEnabled: false
   }
 ];
 
-const defaultState = () => ({
+const defaultState = (locale = getInitialLocale()) => ({
   region: 'Vlaanderen',
   purchasePrice: 0,
   renovationOneOff: 0,
   loanAmount: 0,
+  loanToValuePct: 0.9,
   vacancyRateApartment: 0.05,
   vacancyRateCommercial: 0.15,
   targetNetYield: 0.05,
@@ -136,11 +132,11 @@ const defaultState = () => ({
     {
       id: 'unit-apt-1',
       type: 'apartment',
-      label: 'Apartment 1',
+      label: getCopy(locale).defaultUnitLabel,
       monthlyRent: 900
     }
   ],
-  costsCatalog: defaultCostsCatalog()
+  costsCatalog: defaultCostsCatalog(locale)
 });
 
 const createId = () => `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
@@ -151,15 +147,16 @@ const emptyDb = () => ({
   calculations: []
 });
 
-const createCalculationDocument = (state) => {
+const createCalculationDocument = (state, locale = getInitialLocale()) => {
   const now = new Date();
-  const label = new Intl.DateTimeFormat('nl-BE', {
+  const copy = getCopy(locale);
+  const label = new Intl.DateTimeFormat(getLocaleCode(locale), {
     dateStyle: 'short',
     timeStyle: 'short'
   }).format(now);
   return {
     calculationId: createId(),
-    address: `New calculation - ${label}`,
+    address: `${copy.misc.newCalculation} - ${label}`,
     notes: '',
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),

@@ -1,20 +1,20 @@
 <template>
   <div class="section">
     <div class="inline" style="justify-content: space-between; width: 100%;">
-      <h2>Costs Catalog</h2>
+      <h2>{{ copy.sections.costsCatalog }}</h2>
       <div class="toolbar">
-        <button class="secondary" @click="$emit('add')">Add custom cost</button>
-        <button class="secondary" @click="$emit('reset')">Reset to defaults</button>
+        <button class="secondary" @click="$emit('add')">{{ copy.actions.addCustomCost }}</button>
+        <button class="secondary" @click="$emit('reset')">{{ copy.actions.resetDefaults }}</button>
       </div>
     </div>
     <table class="table" style="margin-top: 12px;">
       <thead>
         <tr>
-          <th>Enabled</th>
-          <th>Name</th>
-          <th>Category</th>
-          <th>Annual Amount</th>
-          <th>Description</th>
+          <th>{{ copy.labels.enabled }}</th>
+          <th>{{ copy.labels.name }}</th>
+          <th>{{ copy.labels.category }}</th>
+          <th>{{ copy.labels.annualAmount }}</th>
+          <th>{{ copy.labels.description }}</th>
         </tr>
       </thead>
       <tbody>
@@ -27,14 +27,14 @@
           </td>
           <td>
             <select :value="item.category" @change="updateCost(item.id, { category: $event.target.value })">
-              <option value="tax">Tax</option>
-              <option value="insurance">Insurance</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="inspection">Inspection</option>
-              <option value="utilities">Utilities</option>
-              <option value="management">Management</option>
-              <option value="capex_reserve">Capex reserve</option>
-              <option value="other">Other</option>
+              <option value="tax">{{ copy.costCategories.tax }}</option>
+              <option value="insurance">{{ copy.costCategories.insurance }}</option>
+              <option value="maintenance">{{ copy.costCategories.maintenance }}</option>
+              <option value="inspection">{{ copy.costCategories.inspection }}</option>
+              <option value="utilities">{{ copy.costCategories.utilities }}</option>
+              <option value="management">{{ copy.costCategories.management }}</option>
+              <option value="capex_reserve">{{ copy.costCategories.capex_reserve }}</option>
+              <option value="other">{{ copy.costCategories.other }}</option>
             </select>
           </td>
           <td>
@@ -59,6 +59,10 @@
 const props = defineProps({
   costs: {
     type: Array,
+    required: true
+  },
+  copy: {
+    type: Object,
     required: true
   }
 });

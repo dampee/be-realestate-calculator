@@ -1,8 +1,19 @@
 <template>
   <div>
     <header style="margin-bottom: 16px;">
-      <h1>Belgian Mixed-Use Real Estate Calculator</h1>
-      <p class="helper">Offline-first calculator for apartments + commercial units.</p>
+      <div class="inline" style="justify-content: space-between; width: 100%; align-items: center;">
+        <div>
+          <h1>{{ copy.appTitle }}</h1>
+          <p class="helper">{{ copy.appSubtitle }}</p>
+        </div>
+        <label class="inline" style="gap: 8px;">
+          <span>{{ copy.languageLabel }}</span>
+          <select :value="locale" @change="setLocale($event.target.value)">
+            <option value="nl">{{ copy.languageOptions.nl }}</option>
+            <option value="fr">{{ copy.languageOptions.fr }}</option>
+          </select>
+        </label>
+      </div>
     </header>
 
     <CalculationPicker
@@ -13,6 +24,8 @@
       :created-at="currentDoc?.createdAt"
       :updated-at="currentDoc?.updatedAt"
       :error="saveError"
+      :copy="copy"
+      :locale-code="localeCode"
       @new="handleNew"
       @save="handleSave"
       @duplicate="handleDuplicate"
@@ -24,13 +37,13 @@
       @update:notes="notes = $event"
     />
 
-    <PurchaseInputs :state="currentState" @update:state="updateState" />
+    <PurchaseInputs :state="currentState" :copy="copy" :locale-code="localeCode" @update:state="updateState" />
 
-    <UnitsTable :units="currentState.units" @update:units="updateUnits" />
+    <UnitsTable :units="currentState.units" :copy="copy" @update:units="updateUnits" />
 
-    <CostsTable :costs="currentState.costsCatalog" @update:costs="updateCosts" @add="addCost" @reset="resetCosts" />
+    <CostsTable :costs="currentState.costsCatalog" :copy="copy" @update:costs="updateCosts" @add="addCost" @reset="resetCosts" />
 
-    <ResultsPanel :results="results" />
+    <ResultsPanel :results="results" :copy="copy" :locale-code="localeCode" />
   </div>
 </template>
 
@@ -42,22 +55,44 @@ import UnitsTable from './components/UnitsTable.vue';
 import CostsTable from './components/CostsTable.vue';
 import ResultsPanel from './components/ResultsPanel.vue';
 import { useDb, defaultState, defaultCostsCatalog, DRAFT_KEY } from './useDb';
+import { getCopy, getInitialLocale, getLocaleCode, setLocaleCookie } from './i18n';
 
 const { db, activeId, loadDb, createNewCalculation, saveCurrent, duplicateCurrent, deleteCurrent, setActiveCalculation, resetAll } = useDb();
 
-const currentState = ref(defaultState());
+const locale = ref(getInitialLocale());
+const currentState = ref(defaultState(locale.value));
 const address = ref('');
 const notes = ref('');
 const saveError = ref('');
+setLocaleCookie(locale.value);
 let draftTimer = null;
 
 const sortedCalculations = computed(() => {
   return [...db.calculations].sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 });
 
+const copy = computed(() => getCopy(locale.value));
+const localeCode = computed(() => getLocaleCode(locale.value));
+
+const setLocale = (next) => {
+  locale.value = next;
+};
+
 const currentDoc = computed(() => {
   return db.calculations.find((item) => item.calculationId === activeId.value) || null;
 });
+
+const mergeWithDefaults = (partial, defaults) => {
+  if (Array.isArray(partial)) return partial;
+  if (partial && typeof partial === 'object') {
+    const merged = Array.isArray(defaults) ? [] : { ...defaults };
+    Object.keys(partial).forEach((key) => {
+      merged[key] = mergeWithDefaults(partial[key], defaults?.[key]);
+    });
+    return merged;
+  }
+  return partial ?? defaults;
+};
 
 const ensureActive = () => {
   if (!db.calculations.length) {
@@ -75,7 +110,7 @@ const ensureActive = () => {
 };
 
 const loadFromDoc = (doc) => {
-  currentState.value = JSON.parse(JSON.stringify(doc.state));
+  currentState.value = mergeWithDefaults(JSON.parse(JSON.stringify(doc.state)), defaultState(locale.value));
   address.value = doc.address;
   notes.value = doc.notes;
 };
@@ -101,7 +136,7 @@ const updateCosts = (costsCatalog) => {
 const addCost = () => {
   const newCost = {
     id: `cost-${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-    name: 'Custom cost',
+    name: copy.value.misc.customCost,
     category: 'other',
     amountAnnual: 0,
     enabled: true,
@@ -112,7 +147,7 @@ const addCost = () => {
 };
 
 const resetCosts = () => {
-  updateCosts(defaultCostsCatalog());
+  updateCosts(defaultCostsCatalog(locale.value));
 };
 
 const handleNew = () => {
@@ -124,14 +159,14 @@ const handleSave = () => {
   saveError.value = '';
   const trimmed = address.value.trim();
   if (!trimmed) {
-    saveError.value = 'Address is required.';
+    saveError.value = copy.value.errors.addressRequired;
     return;
   }
   const conflict = db.calculations.find((item) => {
     return item.calculationId !== currentDoc.value?.calculationId && item.address.trim().toLowerCase() === trimmed.toLowerCase();
   });
   if (conflict) {
-    saveError.value = 'Address must be unique (case-insensitive).';
+    saveError.value = copy.value.errors.addressUnique;
     return;
   }
   if (!currentDoc.value) return;
@@ -148,7 +183,7 @@ const handleDuplicate = () => {
 
 const handleDelete = () => {
   if (!currentDoc.value) return;
-  const ok = window.confirm('Delete this calculation?');
+  const ok = window.confirm(copy.value.confirmations.deleteCalculation);
   if (!ok) return;
   const deletedId = currentDoc.value.calculationId;
   deleteCurrent(deletedId);
@@ -165,7 +200,7 @@ const handleSelect = (id) => {
 };
 
 const handleReset = () => {
-  const ok = window.confirm('This will clear all saved calculations and drafts. Continue?');
+  const ok = window.confirm(copy.value.confirmations.resetAll);
   if (!ok) return;
   resetAll();
   const doc = createNewCalculation();
@@ -193,7 +228,7 @@ const promptDraftRestore = () => {
   try {
     const draft = JSON.parse(raw);
     if (draft.calculationId === currentDoc.value.calculationId && isStateDifferent(draft.state, currentDoc.value.state)) {
-      const ok = window.confirm('Restore draft?');
+      const ok = window.confirm(copy.value.confirmations.restoreDraft);
       if (ok) {
         currentState.value = draft.state;
       }
@@ -203,7 +238,7 @@ const promptDraftRestore = () => {
   }
 };
 
-const formatCurrency = (value) => new Intl.NumberFormat('nl-BE', { style: 'currency', currency: 'EUR' }).format(value ?? 0);
+const formatCurrency = (value) => new Intl.NumberFormat(localeCode.value, { style: 'currency', currency: 'EUR' }).format(value ?? 0);
 
 const regRate = computed(() => (currentState.value.region === 'Vlaanderen' ? 0.12 : 0.125));
 
@@ -219,11 +254,18 @@ const purchaseCosts = computed(() => {
   };
 });
 
+const maxLoanAmount = computed(() => currentState.value.purchasePrice * (currentState.value.loanToValuePct ?? 0));
+
+const effectiveLoanAmount = computed(() => {
+  if (currentState.value.loanAmount <= 0) return 0;
+  return Math.min(currentState.value.loanAmount, maxLoanAmount.value);
+});
+
 const loanCosts = computed(() => {
-  if (currentState.value.loanAmount <= 0) return null;
-  const mortgageBasis = currentState.value.loanAmount * currentState.value.assumptions.mortgageBasisFactor;
+  if (effectiveLoanAmount.value <= 0) return null;
+  const mortgageBasis = effectiveLoanAmount.value * currentState.value.assumptions.mortgageBasisFactor;
   const mortgageRegistration = mortgageBasis * currentState.value.assumptions.mortgageRegistrationRate;
-  const notaryLoan = currentState.value.loanAmount * currentState.value.assumptions.notaryLoanFactor;
+  const notaryLoan = effectiveLoanAmount.value * currentState.value.assumptions.notaryLoanFactor;
   return {
     mortgageBasis,
     mortgageRegistration,
@@ -267,7 +309,7 @@ const netYield = computed(() => {
 const maxBid = computed(() => {
   const target = currentState.value.targetNetYield;
   if (noi.value <= 0 || target <= 0) {
-    return { display: 'N/A', bufferedDisplay: 'N/A' };
+    return { display: copy.value.results.notAvailable, bufferedDisplay: copy.value.results.notAvailable };
   }
   const fixedAct = currentState.value.assumptions.purchaseFixedActCost;
   const reno = currentState.value.renovationOneOff;
@@ -290,7 +332,9 @@ const results = computed(() => ({
   totalInvestmentExclLoanCosts: totalInvestmentExclLoanCosts.value,
   netYield: netYield.value,
   maxBid: maxBid.value,
-  loanCosts: loanCosts.value
+  loanCosts: loanCosts.value,
+  effectiveLoanAmount: effectiveLoanAmount.value,
+  maxLoanAmount: maxLoanAmount.value
 }));
 
 const deepEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
@@ -317,18 +361,6 @@ const encodeStateMinimal = (state, defaults) => {
   return result;
 };
 
-const mergeWithDefaults = (partial, defaults) => {
-  if (Array.isArray(partial)) return partial;
-  if (partial && typeof partial === 'object') {
-    const merged = Array.isArray(defaults) ? [] : { ...defaults };
-    Object.keys(partial).forEach((key) => {
-      merged[key] = mergeWithDefaults(partial[key], defaults?.[key]);
-    });
-    return merged;
-  }
-  return partial ?? defaults;
-};
-
 const toBase64Url = (str) => {
   const encoded = btoa(unescape(encodeURIComponent(str)));
   return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -341,16 +373,16 @@ const fromBase64Url = (value) => {
 };
 
 const handleShare = async () => {
-  const minimal = encodeStateMinimal(currentState.value, defaultState());
+  const minimal = encodeStateMinimal(currentState.value, defaultState(locale.value));
   const payload = toBase64Url(JSON.stringify(minimal));
   const url = new URL(window.location.href);
   url.searchParams.set('s', payload);
   window.history.replaceState({}, '', url.toString());
   try {
     await navigator.clipboard.writeText(url.toString());
-    window.alert('Share link copied to clipboard.');
+    window.alert(copy.value.alerts.shareCopied);
   } catch (error) {
-    window.prompt('Copy share URL:', url.toString());
+    window.prompt(copy.value.alerts.shareCopyPrompt, url.toString());
   }
 };
 
@@ -361,15 +393,15 @@ const importFromShare = () => {
   try {
     const raw = fromBase64Url(encoded);
     const decoded = JSON.parse(raw);
-    const merged = mergeWithDefaults(decoded, defaultState());
+    const merged = mergeWithDefaults(decoded, defaultState(locale.value));
     const now = new Date();
-    const timestamp = new Intl.DateTimeFormat('nl-BE', {
+    const timestamp = new Intl.DateTimeFormat(localeCode.value, {
       dateStyle: 'short',
       timeStyle: 'short'
     }).format(now);
     const doc = {
       calculationId: `${Date.now()}-${Math.random().toString(16).slice(2, 6)}`,
-      address: `Imported - ${timestamp}`,
+      address: `${copy.value.misc.imported} - ${timestamp}`,
       notes: '',
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
@@ -401,6 +433,10 @@ watch(
 watch([address, notes], () => {
   if (draftTimer) clearTimeout(draftTimer);
   draftTimer = setTimeout(saveDraft, 300);
+});
+
+watch(locale, (next) => {
+  setLocaleCookie(next);
 });
 
 watch(activeId, () => {
