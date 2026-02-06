@@ -61,7 +61,8 @@ export const translations = {
       units: 'Units',
       costsCatalog: 'Kostenlijst',
       results: 'Resultaten',
-      assumptions: 'Aannames'
+      assumptions: 'Aannames',
+      loanDecisionGuide: 'Beslissingsmodel voor banken'
     },
     labels: {
       savedCalculations: 'Opgeslagen berekeningen',
@@ -75,7 +76,7 @@ export const translations = {
       purchasePrice: 'Aankoopprijs (€)',
       renovationBudget: 'Renovatiebudget (eenmalig)',
       loanToValue: 'Leningspercentage (max.)',
-      loanAmount: 'Leenbedrag (optioneel)',
+      ownInvestment: 'Eigen investering',
       vacancyApartment: 'Leegstand (appartement)',
       vacancyCommercial: 'Leegstand (handelsruimte)',
       targetNetYield: 'Doel netto rendement',
@@ -103,7 +104,131 @@ export const translations = {
       regionRate: 'Registratierechten zijn indicatief; controleer het exacte tarief.',
       loanToValueHint: 'Banken lenen vaak max. 90% (80% voor opbrengsteigendommen).',
       loanToValueMax: 'Max. leenbedrag: {amount}',
-      loanToValueExceeded: 'Het leenbedrag ligt boven het maximum en wordt begrensd in de berekeningen.'
+      loanAmountCalculated: 'Berekend leenbedrag: {amount}',
+      loanToValueExceeded: 'Het berekende leenbedrag ligt boven het maximum en wordt begrensd in de berekeningen.'
+    },
+    loanDecisionGuide: {
+      title: 'Het probleem dat de bank oplost',
+      question: '“Mogen we deze lening toekennen zonder dat dit dossier ons om de oren vliegt?”',
+      checksIntro: 'Dat wordt herleid tot drie onafhankelijke checks.',
+      checksOutro: 'Fail je één check → ❌ geen lening (of parameters aanpassen).',
+      sections: [
+        {
+          title: '1. Data model (vereenvoudigd)',
+          code: [
+            'Purchase {',
+            '  purchasePrice: number',
+            '  extraCosts: number // notaris, registratierechten, etc.',
+            '}',
+            '',
+            'Applicant {',
+            '  ownCash: number',
+            '  monthlyNetIncome: number',
+            '  existingMonthlyDebt: number',
+            '}',
+            '',
+            'Property {',
+            '  appraisedValue: number // min(purchasePrice, bankEstimate)',
+            '}',
+            '',
+            'LoanPolicy {',
+            '  maxLTV: number // e.g. 0.8',
+            '  maxDTI: number // e.g. 0.35',
+            '}'
+          ]
+        },
+        {
+          title: '2. Constraint 1: Loan To Value (LTV)',
+          subtitle: 'Interpretatie',
+          code: [
+            'maxLoan = property.appraisedValue * policy.maxLTV',
+            '',
+            'if (requestedLoan > maxLoan) reject()'
+          ],
+          bullets: [
+            'De bank leent nooit op basis van totale investering.',
+            'Alleen op waarde van het onderpand.',
+            'Kosten zijn out-of-band.'
+          ]
+        },
+        {
+          title: '3. Constraint 2: Eigen inbreng moet alles dekken wat niet geleend wordt',
+          code: [
+            'totalInvestment =',
+            '  purchase.purchasePrice + purchase.extraCosts',
+            '',
+            'ownContributionRequired =',
+            '  totalInvestment - maxLoan',
+            '',
+            'if (applicant.ownCash < ownContributionRequired) reject()'
+          ],
+          note: 'Belangrijk inzicht: je eigen inbreng is niet aankoopprijs − lening, maar (aankoop + kosten) − lening.'
+        },
+        {
+          title: '4. Constraint 3: Terugbetalingscapaciteit (DTI)',
+          code: [
+            'monthlyLoanPayment = calculateAnnuity(',
+            '  loanAmount,',
+            '  interestRate,',
+            '  duration',
+            ')',
+            '',
+            'totalMonthlyDebt =',
+            '  applicant.existingMonthlyDebt + monthlyLoanPayment',
+            '',
+            'dti =',
+            '  totalMonthlyDebt / applicant.monthlyNetIncome',
+            '',
+            'if (dti > policy.maxDTI) reject()'
+          ],
+          bullets: [
+            'maxDTI ≈ 0.30 – 0.40',
+            'Bij investeringsvastgoed tellen huurinkomsten maar gedeeltelijk mee.'
+          ]
+        },
+        {
+          title: '5. Hypotheek ≠ lening (klassieke verwarring)',
+          paragraphs: [
+            'LoanAmount = geld dat je ontvangt.',
+            'MortgageAmount = juridische waarborg voor de bank.',
+            'Bank doet vaak:'
+          ],
+          code: [
+            'mortgageAmount = loanAmount * 1.2'
+          ],
+          bullets: [
+            'Verhoogt notariskosten.',
+            'Verandert niets aan leencapaciteit.',
+            'Is puur risico-afdekking.'
+          ]
+        },
+        {
+          title: '6. Waarom kosten niet “gewoon mee geleend” worden',
+          paragraphs: [
+            'Vanuit risicologica: kosten zijn geld dat geen onderpand creëert.'
+          ],
+          bullets: [
+            '→ geen collateral',
+            '→ hoger verlies bij default',
+            '→ regulator kijkt mee',
+            '→ bank wil dit niet'
+          ],
+          note: 'Dus: kosten = altijd eigen middelen, of via aparte (duurdere) lening.'
+        },
+        {
+          title: '7. Volledige beslissingsflow (mentaal model)',
+          code: [
+            'function canGrantLoan(input): Decision {',
+            '  if (!passesLTV(input)) return Reject(\"LTV too high\")',
+            '  if (!hasEnoughCash(input)) return Reject(\"Insufficient own funds\")',
+            '  if (!passesDTI(input)) return Reject(\"Monthly burden too high\")',
+            '',
+            '  return Approve()',
+            '}'
+          ],
+          note: 'Alle drie moeten groen zijn.'
+        }
+      ]
     },
     results: {
       incomeNoi: 'Inkomsten & NOI',
@@ -193,7 +318,8 @@ export const translations = {
       units: 'Unités',
       costsCatalog: 'Catalogue des coûts',
       results: 'Résultats',
-      assumptions: 'Hypothèses'
+      assumptions: 'Hypothèses',
+      loanDecisionGuide: 'Modèle de décision bancaire'
     },
     labels: {
       savedCalculations: 'Calculs enregistrés',
@@ -207,7 +333,7 @@ export const translations = {
       purchasePrice: "Prix d'achat (€)",
       renovationBudget: 'Budget rénovation (ponctuel)',
       loanToValue: "Pourcentage d'emprunt (max.)",
-      loanAmount: "Montant emprunté (optionnel)",
+      ownInvestment: 'Apport personnel',
       vacancyApartment: 'Vacance (appartement)',
       vacancyCommercial: 'Vacance (commerce)',
       targetNetYield: 'Rendement net cible',
@@ -235,7 +361,131 @@ export const translations = {
       regionRate: "Le taux d'enregistrement est indicatif ; vérifiez le taux exact.",
       loanToValueHint: 'Les banques prêtent souvent max. 90 % (80 % pour les biens de rendement).',
       loanToValueMax: 'Montant max. emprunté : {amount}',
-      loanToValueExceeded: "Le montant emprunté dépasse le maximum et est plafonné dans les calculs."
+      loanAmountCalculated: "Montant emprunté calculé : {amount}",
+      loanToValueExceeded: "Le montant emprunté calculé dépasse le maximum et est plafonné dans les calculs."
+    },
+    loanDecisionGuide: {
+      title: 'Le problème que la banque résout',
+      question: '« Peut-on accorder ce prêt sans que ce dossier nous explose au visage ? »',
+      checksIntro: 'Cela se ramène à trois contrôles indépendants.',
+      checksOutro: 'Si un seul contrôle échoue → ❌ pas de prêt (ou paramètres à ajuster).',
+      sections: [
+        {
+          title: '1. Modèle de données (simplifié)',
+          code: [
+            'Purchase {',
+            '  purchasePrice: number',
+            "  extraCosts: number // notaire, droits d'enregistrement, etc.",
+            '}',
+            '',
+            'Applicant {',
+            '  ownCash: number',
+            '  monthlyNetIncome: number',
+            '  existingMonthlyDebt: number',
+            '}',
+            '',
+            'Property {',
+            '  appraisedValue: number // min(purchasePrice, bankEstimate)',
+            '}',
+            '',
+            'LoanPolicy {',
+            '  maxLTV: number // ex. 0.8',
+            '  maxDTI: number // ex. 0.35',
+            '}'
+          ]
+        },
+        {
+          title: '2. Contrainte 1 : Loan To Value (LTV)',
+          subtitle: 'Interprétation',
+          code: [
+            'maxLoan = property.appraisedValue * policy.maxLTV',
+            '',
+            'if (requestedLoan > maxLoan) reject()'
+          ],
+          bullets: [
+            "La banque ne prête jamais sur la base de l'investissement total.",
+            'Uniquement sur la valeur du bien en garantie.',
+            'Les frais sont hors périmètre.'
+          ]
+        },
+        {
+          title: "3. Contrainte 2 : l'apport personnel doit couvrir ce qui n'est pas emprunté",
+          code: [
+            'totalInvestment =',
+            '  purchase.purchasePrice + purchase.extraCosts',
+            '',
+            'ownContributionRequired =',
+            '  totalInvestment - maxLoan',
+            '',
+            'if (applicant.ownCash < ownContributionRequired) reject()'
+          ],
+          note: "Point clé : votre apport n'est pas prix d'achat − prêt, mais (achat + frais) − prêt."
+        },
+        {
+          title: '4. Contrainte 3 : capacité de remboursement (DTI)',
+          code: [
+            'monthlyLoanPayment = calculateAnnuity(',
+            '  loanAmount,',
+            '  interestRate,',
+            '  duration',
+            ')',
+            '',
+            'totalMonthlyDebt =',
+            '  applicant.existingMonthlyDebt + monthlyLoanPayment',
+            '',
+            'dti =',
+            '  totalMonthlyDebt / applicant.monthlyNetIncome',
+            '',
+            'if (dti > policy.maxDTI) reject()'
+          ],
+          bullets: [
+            'maxDTI ≈ 0.30 – 0.40',
+            "Pour l'investissement immobilier, les loyers comptent seulement en partie."
+          ]
+        },
+        {
+          title: '5. Hypothèque ≠ prêt (confusion classique)',
+          paragraphs: [
+            "LoanAmount = l'argent que vous recevez.",
+            'MortgageAmount = garantie juridique pour la banque.',
+            'La banque fait souvent :'
+          ],
+          code: [
+            'mortgageAmount = loanAmount * 1.2'
+          ],
+          bullets: [
+            'Augmente les frais de notaire.',
+            "Ne change rien à la capacité d'emprunt.",
+            "C'est une couverture de risque."
+          ]
+        },
+        {
+          title: '6. Pourquoi les frais ne sont pas « simplement empruntés »',
+          paragraphs: [
+            "Du point de vue du risque : les frais sont de l'argent qui ne crée pas de garantie."
+          ],
+          bullets: [
+            '→ pas de collatéral',
+            '→ perte plus élevée en cas de défaut',
+            '→ le régulateur surveille',
+            '→ la banque ne le souhaite pas'
+          ],
+          note: 'Donc : frais = toujours fonds propres, ou via un prêt séparé (plus cher).'
+        },
+        {
+          title: '7. Flux de décision complet (modèle mental)',
+          code: [
+            'function canGrantLoan(input): Decision {',
+            '  if (!passesLTV(input)) return Reject(\"LTV too high\")',
+            '  if (!hasEnoughCash(input)) return Reject(\"Insufficient own funds\")',
+            '  if (!passesDTI(input)) return Reject(\"Monthly burden too high\")',
+            '',
+            '  return Approve()',
+            '}'
+          ],
+          note: 'Les trois doivent être au vert.'
+        }
+      ]
     },
     results: {
       incomeNoi: 'Revenus & NOI',
