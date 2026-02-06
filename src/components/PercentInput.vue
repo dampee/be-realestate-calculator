@@ -8,7 +8,7 @@
       @focus="handleFocus"
       @blur="handleBlur"
     />
-    <span class="suffix">%</span>
+    <span class="suffix" aria-hidden="true">%</span>
   </div>
 </template>
 
