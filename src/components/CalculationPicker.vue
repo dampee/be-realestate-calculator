@@ -18,7 +18,7 @@
         <select :value="activeId" @change="$emit('select', $event.target.value)">
           <option value="" disabled>{{ copy.labels.selectCalculation }}</option>
           <option v-for="calc in calculations" :key="calc.calculationId" :value="calc.calculationId">
-            {{ calc.address }} — {{ formatDate(calc.updatedAt) }}
+            {{ calc.address || copy.misc.newCalculation }} — {{ formatDate(calc.updatedAt) }}
           </option>
         </select>
       </div>

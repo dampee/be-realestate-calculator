@@ -3,5 +3,9 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   plugins: [vue()],
-  base: '/be-realestate-calculator/'
+  base: '/be-realestate-calculator/',
+  test: {
+    environment: 'jsdom',
+    globals: true
+  }
 });
