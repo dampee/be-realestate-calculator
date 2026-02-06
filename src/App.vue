@@ -50,8 +50,6 @@
     <CostsTable :costs="currentState.costsCatalog" :copy="copy" @update:costs="updateCosts" @add="addCost" @reset="resetCosts" />
 
     <ResultsPanel :results="results" :copy="copy" :locale-code="localeCode" />
-
-    <LoanDecisionGuide :copy="copy" />
   </div>
 </template>
 
@@ -62,7 +60,6 @@ import PurchaseInputs from './components/PurchaseInputs.vue';
 import UnitsTable from './components/UnitsTable.vue';
 import CostsTable from './components/CostsTable.vue';
 import ResultsPanel from './components/ResultsPanel.vue';
-import LoanDecisionGuide from './components/LoanDecisionGuide.vue';
 import { useDb, defaultState, defaultCostsCatalog, DRAFT_KEY } from './useDb';
 import { getCopy, getInitialLocale, getLocaleCode, setLocaleCookie } from './i18n';
 
